@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - backend
+  tomcat:
+    build: .
+    image: tomcat:10.0-jdk17
+    ports:
+      - "8080:8080"
+      - "5005:5005"
+    command: "catalina.sh jpda run"
+    volumes:
+      - "./target/springframework:/usr/local/tomcat/webapps/app"
+    networks:
+      - backend
+    environment:
+      - JPDA_ADDRESS=*:5005
+      - JPDA_TRANSPORT=dt_socket
+      - JDBC_DRIVER=org.postgresql.Driver
+volumes:
+  db:
+    driver: local
+networks:
+  backend:
+    driver: bridge
