@@ -118,42 +118,50 @@ class ChatServiceTest {
     assertEquals("Chat with id 1 not found", exception.getMessage());
     verify(chatRepository, times(1)).findById(1L);
   }
-
   @Test
   void saveChatAndReturnDto() {
-    // Arrange
     CreateChatDto createChatDto = new CreateChatDto();
     createChatDto.setChatName("Test Chat");
     createChatDto.setParticipants(Arrays.asList(1L, 2L));
 
     Chat chat = new Chat();
     chat.setChatName(createChatDto.getChatName());
-    chat.setId(1L);
 
-    ChatDto chatDto = new ChatDto();
-    chatDto.setId(1L);
-    chatDto.setChatName("Test Chat");
+    when(chatRepository.save(any(Chat.class))).thenAnswer(invocation -> {
+      Chat savedChat = invocation.getArgument(0);
+      savedChat.setId(1L); // Устанавливаем ID для имитации поведения
+      return savedChat;
+    });
 
     User user1 = new User("User1", "pass");
     user1.setId(1L);
+
     User user2 = new User("User2", "pass");
     user2.setId(2L);
 
     List<User> userList = Arrays.asList(user1, user2);
 
-    when(chatRepository.save(any(Chat.class))).thenReturn(chat);
     when(userRepository.findAllById(createChatDto.getParticipants())).thenReturn(userList);
+
+    ChatDto chatDto = new ChatDto();
+    chatDto.setId(1L);
+    chatDto.setChatName("Test Chat");
+
     when(chatMapper.toDTO(any(Chat.class))).thenReturn(chatDto);
 
     ChatDto savedChatDto = chatService.save(createChatDto);
 
     assertNotNull(savedChatDto);
     assertEquals("Test Chat", savedChatDto.getChatName());
+
     verify(chatRepository, times(1)).save(any(Chat.class));
     verify(userRepository, times(1)).findAllById(createChatDto.getParticipants());
+
     verify(userRepository, times(1)).saveAll(userList);
+
     verify(chatMapper, times(1)).toDTO(any(Chat.class));
   }
+
 
   @Test
   void updateChat() {

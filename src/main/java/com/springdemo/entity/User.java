@@ -43,10 +43,16 @@ public class User {
 
   public void remove(Chat chat) {
     if (chat != null) {
-      chats.remove(chat);
-      chat.getParticipants().remove(this);
+      if (chat.getParticipants().contains(this)) {
+        chat.getParticipants().remove(this);
+      }
+
+      if (chats.contains(chat)) {
+        chats.remove(chat);
+      }
     }
   }
+
 
   public User(String username, String pass) {
     this.username = username;

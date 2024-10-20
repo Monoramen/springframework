@@ -13,8 +13,11 @@ import com.springdemo.mapper.ChatMapper;
 import com.springdemo.mapper.UserMapper;
 import com.springdemo.repository.ChatRepository;
 import com.springdemo.repository.UserRepository;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,14 +51,15 @@ public class ChatService {
   }
 
   public ChatDto findById(Long id) {
-    Optional<Chat> chat = Optional.ofNullable(chatRepository.findById(id)
-        .orElseThrow(() -> new NotFoundException("Chat with id " + id + " not found")));
-    List<Message> msgs = chat.get().getMessages();
+    Chat chat = chatRepository.findById(id)
+        .orElseThrow(() -> new NotFoundException("Chat with id " + id + " not found"));
+    List<Message> msgs = chat.getMessages();
     System.out.println(msgs);
-    return chatMapper.toDTO(chat.get());
+    return chatMapper.toDTO(chat);
   }
 
   public ChatDto save(CreateChatDto createChatDto) {
+
     List<Long> participantsId = createChatDto.getParticipants();
     Chat chat = new Chat();
     chat.setChatName(createChatDto.getChatName());
@@ -66,6 +70,7 @@ public class ChatService {
       user.addChat(savedChat);
     }
     userRepository.saveAll(participants);
+
     return chatMapper.toDTO(savedChat);
   }
 
@@ -74,27 +79,35 @@ public class ChatService {
     chat.setId(chatDto.getId());
     chat.setChatName(chatDto.getChatName());
 
-    Optional<Chat> chatFromRepo = Optional.ofNullable(chatRepository.findById(chat.getId())
-        .orElseThrow(() -> new NotFoundException("Chat with id " + chat.getId() + " not found")));
+   Chat chatFromRepo = chatRepository.findById(chat.getId())
+        .orElseThrow(() -> new NotFoundException("Chat with id " + chat.getId() + " not found"));
 
-    chat.setParticipants(chatFromRepo.get().getParticipants());
+    chat.setParticipants(chatFromRepo.getParticipants());
     return chatMapper.toDTO(chatRepository.save(chat));
   }
 
   public void delete(Long id) {
-    Optional<Chat> chatOptional = Optional.ofNullable(chatRepository.findById(id)
-        .orElseThrow(() -> new NotFoundException("Chat with id " + id + " not found")));
+    Chat chat = chatRepository.findById(id)
+        .orElseThrow(() -> new NotFoundException("Chat with id " + id + " not found"));
 
-      Chat chat = chatOptional.get();
-      List<User> userList = chat.getParticipants();
+    List<User> userList = new ArrayList<>(chat.getParticipants());
 
-      for (User user : userList) {
-        if (user != null) {
-          user.remove(chat);
-        }
+    if (userList.isEmpty()) {
+      throw new IllegalStateException("Cannot delete chat with no participants.");
+    }
+
+    Iterator<User> iterator = userList.iterator();
+    while (iterator.hasNext()) {
+      User user = iterator.next();
+      if (user != null) {
+        user.remove(chat); // Ensure this does not modify userList
       }
-      userRepository.saveAll(userList);
-      chatRepository.delete(chat);
+    }
+
+    userRepository.saveAll(userList);
+    chatRepository.delete(chat);
   }
+
+
 
 }
