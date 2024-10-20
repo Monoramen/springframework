@@ -1,5 +1,6 @@
 package com.springdemo.service;
 
+import com.ctc.wstx.shaded.msv_core.scanner.dtd.MessageCatalog;
 import com.springdemo.dto.MessageDto;
 import com.springdemo.entity.Chat;
 import com.springdemo.entity.Message;
@@ -59,6 +60,16 @@ public class MessageService {
     message.setMessage(messageDto.getMessage());
     message.setSender(sender);
     message.setChat(chat);
+
+    Message savedMessage = messageRepository.save(message);
+
+    return messageMapper.toDTO(savedMessage);
+  }
+
+  public MessageDto update(Long id,MessageDto messageDto) {
+    Message message = messageRepository.findById(id).orElseThrow(() -> new NotFoundException("Message with id " + id + " not found."));
+
+    message.setMessage(messageDto.getMessage());
 
     Message savedMessage = messageRepository.save(message);
 

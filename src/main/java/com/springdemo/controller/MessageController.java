@@ -45,7 +45,7 @@ public class MessageController {
   @PutMapping(value = "/{id}")
   @ResponseStatus(HttpStatus.OK)
   public MessageDto update(@PathVariable("id") Long id, @RequestBody MessageDto messageDto) {
-    return messageService.save(messageDto);
+    return messageService.update(id, messageDto);
   }
 
   @DeleteMapping(value = "/{id}")

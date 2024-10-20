@@ -113,13 +113,20 @@ public class MessageControllerTest {
 
   @Test
   void updateMessage() {
-    when(messageService.save(messageDto)).thenReturn(messageDto);
+    Long messageId = 1L;
+    MessageDto messageDto = new MessageDto();
+    messageDto.setId(messageId);
+    messageDto.setMessage("Updated message");
 
-    MessageDto result = messageController.update(1L, messageDto);
+    when(messageService.update(messageId, messageDto)).thenReturn(messageDto);
+
+    MessageDto result = messageController.update(messageId, messageDto);
 
     assertEquals(messageDto, result);
-    verify(messageService, times(1)).save(messageDto);
+
+    verify(messageService, times(1)).update(messageId, messageDto);
   }
+
 
   @Test
   void deleteMessageServiceDelete() {

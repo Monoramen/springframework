@@ -46,7 +46,7 @@ class MessageServiceTest {
   }
 
   @Test
-  void findAll_ShouldReturnListOfMessages() {
+  void findAllListOfMessages() {
     Message message1 = new Message();
     message1.setId(1L);
     message1.setMessage("test msg");
@@ -66,7 +66,7 @@ class MessageServiceTest {
   }
 
   @Test
-  void findById_ShouldReturnMessage_WhenFound() {
+  void findByIdMessage() {
     Message message = new Message();
     message.setId(1L);
     when(messageRepository.findById(1L)).thenReturn(Optional.of(message));
@@ -80,7 +80,7 @@ class MessageServiceTest {
   }
 
   @Test
-  void findById_ShouldThrowNotFoundException_WhenNotFound() {
+  void findByIdThrowNotFoundException() {
     when(messageRepository.findById(1L)).thenReturn(Optional.empty());
 
     NotFoundException exception = assertThrows(NotFoundException.class, () -> messageService.findById(1L));
@@ -89,7 +89,7 @@ class MessageServiceTest {
   }
 
   @Test
-  void save_ShouldSaveMessage_WhenValid() {
+  void saveMessage() {
     MessageDto messageDto = new MessageDto();
     messageDto.setMessage("Hello");
     messageDto.setSenderId(1L);
@@ -113,14 +113,12 @@ class MessageServiceTest {
   }
 
   @Test
-  void save_ShouldThrowNotFoundException_WhenSenderNotFound() {
-    // Arrange
+  void saveThrowNotFoundException() {
     MessageDto messageDto = new MessageDto();
     messageDto.setSenderId(1L);
 
     when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-    // Act & Assert
     NotFoundException exception = assertThrows(NotFoundException.class, () -> messageService.save(messageDto));
     assertEquals("User with id 1 not found.", exception.getMessage());
     verify(userRepository, times(1)).findById(1L);
@@ -128,29 +126,70 @@ class MessageServiceTest {
   }
 
   @Test
-  void delete_ShouldDeleteMessage_WhenFound() {
-    // Arrange
+  void deleteMessage() {
     Message message = new Message();
     message.setId(1L);
     when(messageRepository.findById(1L)).thenReturn(Optional.of(message));
 
-    // Act
     messageService.delete(1L);
 
-    // Assert
     verify(messageRepository, times(1)).findById(1L);
     verify(messageRepository, times(1)).delete(message);
   }
 
   @Test
-  void delete_ShouldThrowNotFoundException_WhenNotFound() {
-    // Arrange
+  void deleteThrowNotFoundException() {
     when(messageRepository.findById(1L)).thenReturn(Optional.empty());
 
-    // Act & Assert
     NotFoundException exception = assertThrows(NotFoundException.class, () -> messageService.delete(1L));
     assertEquals("Message with id 1 not found", exception.getMessage());
     verify(messageRepository, times(1)).findById(1L);
     verify(messageRepository, times(0)).delete(any(Message.class));
   }
+
+
+  @Test
+  void updateMessage() {
+    Long messageId = 1L;
+    MessageDto messageDto = new MessageDto();
+    messageDto.setId(messageId);
+    messageDto.setMessage("Updated message");
+
+    Message existingMessage = new Message();
+    existingMessage.setId(messageId);
+    existingMessage.setMessage("Old message");
+
+    when(messageRepository.findById(messageId)).thenReturn(Optional.of(existingMessage));
+
+    existingMessage.setMessage(messageDto.getMessage());
+
+    when(messageRepository.save(existingMessage)).thenReturn(existingMessage);
+
+    when(messageMapper.toDTO(existingMessage)).thenReturn(messageDto);
+
+    MessageDto result = messageService.update(messageId, messageDto);
+
+    assertNotNull(result);
+    assertEquals("Updated message", result.getMessage());
+
+    verify(messageRepository, times(1)).findById(messageId);
+    verify(messageRepository, times(1)).save(existingMessage);
+  }
+
+
+  @Test
+  void updateThrowNotFoundException() {
+    Long messageId = 1L;
+    MessageDto messageDto = new MessageDto();
+    messageDto.setMessage("Some message");
+
+    when(messageRepository.findById(messageId)).thenReturn(Optional.empty());
+
+    NotFoundException exception = assertThrows(NotFoundException.class, () -> messageService.update(messageId, messageDto));
+    assertEquals("Message with id " + messageId + " not found.", exception.getMessage());
+
+    verify(messageRepository, times(1)).findById(messageId);
+    verify(messageRepository, times(0)).save(any(Message.class));
+  }
+
 }
